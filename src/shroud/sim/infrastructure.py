@@ -54,6 +54,21 @@ class Structure:
         return _geo_hash(self.name, self.kind, c, round(self.radius, 2), round(self.height, 2), s)
 
     # ---- geometry -------------------------------------------------------
+    def outward_normal(self, point) -> np.ndarray:
+        """Approximate outward surface normal at a world ``point``."""
+        p = np.asarray(point, float)
+        if self.kind == "sphere":
+            n = p - self.center
+        elif self.kind == "pipe_rack":
+            rel = (p - self.center) / np.maximum(self.size, 1e-6)
+            ax = int(np.argmax(np.abs(rel)))
+            n = np.zeros(3)
+            n[ax] = np.sign(rel[ax]) or 1.0
+        else:  # vertical cylinder: radial in xy
+            n = np.array([p[0] - self.center[0], p[1] - self.center[1], 0.0])
+        nn = np.linalg.norm(n)
+        return n / nn if nn > 1e-9 else np.array([1.0, 0.0, 0.0])
+
     def axis_point(self, frac: float) -> np.ndarray:
         """Point on the vertical axis at height fraction ``frac`` in [0,1]."""
         return self.center + np.array([0.0, 0.0, frac * self.height])
