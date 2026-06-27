@@ -1,6 +1,6 @@
-import { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Float, Sparkles, Environment, Trail } from '@react-three/drei';
+import { useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Grid, Float, Sparkles, Trail } from '@react-three/drei';
 import * as THREE from 'three';
 import type { UAV, Defect, Building } from '../types';
 
@@ -45,8 +45,8 @@ function RefineryBuilding({ building }: { building: Building }) {
       <group ref={ref} position={[0, h + 0.05, 0]}>
         <mesh geometry={geom}>
           <meshStandardMaterial color={color} emissive={color}
-            emissiveIntensity={building.status === 'NORMAL' ? 0.12 : 0.5}
-            metalness={0.8} roughness={0.25} transparent opacity={0.9} />
+            emissiveIntensity={building.status === 'NORMAL' ? 0.28 : 0.6}
+            metalness={0.45} roughness={0.4} transparent opacity={0.92} />
         </mesh>
         {/* wireframe overlay */}
         <mesh geometry={geom} scale={1.015}>
@@ -108,7 +108,7 @@ function DroneModel({ uav }: { uav: UAV }) {
         {/* hull */}
         <mesh>
           <boxGeometry args={[0.14, 0.045, 0.14]} />
-          <meshStandardMaterial color="#16243c" metalness={0.95} roughness={0.18} />
+          <meshStandardMaterial color="#34507a" emissive="#1a2c4a" emissiveIntensity={0.5} metalness={0.4} roughness={0.45} />
         </mesh>
         <mesh position={[0, 0.035, 0]}>
           <sphereGeometry args={[0.035, 8, 8]} />
@@ -133,7 +133,7 @@ function DroneModel({ uav }: { uav: UAV }) {
         {[[-0.11,-0.11],[0.11,-0.11],[-0.11,0.11],[0.11,0.11]].map(([x,z],i)=>(
           <mesh key={i} position={[x/2, 0, z/2]} rotation={[0, Math.atan2(z, x), 0]}>
             <boxGeometry args={[0.16, 0.012, 0.012]} />
-            <meshStandardMaterial color="#2a3d57" metalness={0.7} roughness={0.3} />
+            <meshStandardMaterial color="#3a557a" metalness={0.4} roughness={0.45} />
           </mesh>
         ))}
         <pointLight color={sensorColor} intensity={flying ? 0.6 : 0.15} distance={1.6} />
@@ -205,19 +205,38 @@ function DefectMarker({ defect }: { defect: Defect }) {
   );
 }
 
+function ContextGuard() {
+  const { gl, invalidate } = useThree();
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onLost = (e: Event) => { e.preventDefault(); };
+    const onRestored = () => { invalidate(); };
+    canvas.addEventListener('webglcontextlost', onLost, false);
+    canvas.addEventListener('webglcontextrestored', onRestored, false);
+    gl.setClearColor(new THREE.Color('#04070f'), 1);
+    return () => {
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
+    };
+  }, [gl, invalidate]);
+  return null;
+}
+
 interface Props { uavs: UAV[]; defects: Defect[]; buildings: Building[]; }
 
 export default function ThreeScene({ uavs, defects, buildings }: Props) {
   return (
     <Canvas
       camera={{ position: [7, 5.5, 7], fov: 52, near: 0.1, far: 100 }}
-      gl={{ antialias: true, alpha: false }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false }}
       style={{ background: '#04070f' }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
+      onCreated={({ gl }) => gl.setClearColor(new THREE.Color('#04070f'), 1)}
     >
+      <ContextGuard />
       <fog attach="fog" args={['#04070f', 10, 26]} />
-      <Environment preset="night" />
-      <ambientLight intensity={0.18} />
+      <ambientLight intensity={0.55} />
+      <hemisphereLight args={['#9ec4ff', '#0a1322', 0.5]} />
       <directionalLight position={[6, 12, 6]} intensity={0.5} color="#6aa0ff" />
       <pointLight position={[0, 6, 0]} intensity={0.4} color={COL.cyan} />
       <pointLight position={[-6, 3, -6]} intensity={0.3} color={COL.violet} />
