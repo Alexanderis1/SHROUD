@@ -18,11 +18,11 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (step >= STEPS.length) {
-      const t = setTimeout(() => setDone(true), 500);
-      const t2 = setTimeout(onDone, 1100);
+      const t = setTimeout(() => setDone(true), 700);
+      const t2 = setTimeout(onDone, 1350);
       return () => { clearTimeout(t); clearTimeout(t2); };
     }
-    const delay = step === 0 ? 250 : 230 + Math.random() * 160;
+    const delay = step === 0 ? 420 : 340 + Math.random() * 180;
     const t = setTimeout(() => setStep(s => s + 1), delay);
     return () => clearTimeout(t);
   }, [step, onDone]);

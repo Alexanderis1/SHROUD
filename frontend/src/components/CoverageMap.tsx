@@ -8,18 +8,28 @@ export default function CoverageMap({ uavs, buildings, coverage }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frame = useRef(0);
   const angle = useRef(0);
+  const dataRef = useRef({ uavs, buildings });
+  dataRef.current = { uavs, buildings };
 
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    const W = canvas.width = canvas.clientWidth * dpr;
-    const H = canvas.height = canvas.clientHeight * dpr;
-    ctx.scale(1, 1);
-    const cx = W / 2, cz = H / 2;
-    const sx = W / 13, sz = H / 13;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 1, H = 1, cx = 0, cz = 0, sx = 1, sz = 1;
+
+    const resize = () => {
+      const w = canvas.clientWidth || 240;
+      const h = canvas.clientHeight || 180;
+      canvas.width = W = Math.max(1, Math.floor(w * dpr));
+      canvas.height = H = Math.max(1, Math.floor(h * dpr));
+      cx = W / 2; cz = H / 2; sx = W / 13; sz = H / 13;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
 
     const draw = () => {
+      const { uavs, buildings } = dataRef.current;
       ctx.clearRect(0, 0, W, H);
 
       // concentric range rings
@@ -82,8 +92,8 @@ export default function CoverageMap({ uavs, buildings, coverage }: Props) {
 
     const loop = () => { draw(); frame.current = requestAnimationFrame(loop); };
     loop();
-    return () => cancelAnimationFrame(frame.current);
-  }, [uavs, buildings]);
+    return () => { cancelAnimationFrame(frame.current); ro.disconnect(); };
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
