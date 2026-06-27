@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shroud"
+version = "0.1.0"
+description = "Cooperative UAV monitoring of critical infrastructure: CV/SAR defect detection, graph-theoretic task allocation, and Avalanche-tokenised, cooperatively-validated failure tracking."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pyyaml>=6.0",
+    "networkx>=3.2",
+    "python-dotenv>=1.0",
+    # render + computer vision (hybrid: real offscreen renders + real CV)
+    "opencv-python>=4.9",
+    "trimesh>=4.0",
+    "pyrender>=0.1.45",
+    "pyglet>=2.0",
+    "moderngl>=5.10",
+    "Pillow>=10.0",
+    "imageio>=2.30",
+    # blockchain (Avalanche C-Chain / Fuji, EVM)
+    "web3>=7.0",
+    "eth-account>=0.11",
+    "py-solc-x>=2.0",
+    # dashboard websocket
+    "websockets>=14.0",
+]
+
+[project.optional-dependencies]
+# Local deterministic EVM for fast contract tests (no network/faucet).
+localchain = ["eth-tester>=0.11", "py-evm>=0.10"]
+dev = ["pytest>=8.0", "ruff>=0.4", "eth-tester>=0.11", "py-evm>=0.10"]
+
+[project.scripts]
+shroud = "shroud.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"shroud.viz" = ["web/*"]
+"shroud.chain" = ["abi/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = '--strict-markers -m "not slow and not fuji"'
+markers = [
+    "slow: long-running statistical / rendering suites",
+    "fuji: tests that hit the live Avalanche Fuji testnet (need a funded deployer)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
