@@ -1,0 +1,9 @@
+# Normalize to LF in the repo (cross-platform: JS dashboard, Solidity, Python)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.glb binary
+*.bin binary
+*.gltf -text
+*.ktx2 binary

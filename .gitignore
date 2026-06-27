@@ -1,0 +1,42 @@
+# --- secrets: NEVER commit ---
+.env
+.env.*
+!.env.example
+*.key
+secrets/
+deployer_key*
+wallet*.json
+
+# --- python ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# --- solidity / chain artifacts (regenerated) ---
+contracts/out/
+contracts/artifacts/
+.solcx/
+deployments/*.local.json
+
+# --- sim outputs ---
+runs/
+*.recording.json
+render_cache/
+crops/
+
+# --- 3D model assets (large; fetched via scripts/fetch_model) ---
+assets/model/*
+!assets/model/.gitkeep
+!assets/model/README.md
+!assets/model/MANIFEST.json
+
+# --- os / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
