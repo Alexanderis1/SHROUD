@@ -30,7 +30,9 @@ from .chain.client import ShroudChain
 from .chain.identities import uav_signers
 from .core.messages import (AltitudeClass, CameraPose, DefectType, FailureState,
                             SensorModality)
-from .coord.allocation import assign_coverage, select_validators
+from .coord.allocation import select_validators
+from .coord.graph import (auction_allocate, coverage_graph, ordered_structures,
+                          plan_coverage, route_length)
 from .fleet import Uav
 from .sensors.camera import inspect
 from .sensors.sar import inspect_sar
@@ -132,6 +134,15 @@ def run_demo(network: str = "local", seed: int = 0, n_uavs: int = 6, n_high: int
     fleet = low_fleet + high_fleet
     log(f"[registry] {len(sid_to_bid)} structures, {n_uavs} EO + {n_high} SAR UAVs on-chain")
 
+    # --- graph-theoretic cooperative allocation (auction) + route metric ---
+    coverage = auction_allocate(refinery.structures, low_fleet)
+    sar_assign = auction_allocate(refinery.structures, high_fleet) if high_fleet else {}
+    cg = coverage_graph(refinery.structures)
+    eo_route = sum(route_length(refinery, u, ordered_structures(refinery, u, coverage[u.uav_id]))
+                   for u in low_fleet)
+    log(f"[coord] coverage graph {cg.number_of_nodes()} nodes / {cg.number_of_edges()} edges; "
+        f"auction-allocated TSP routes total {eo_route:.0f} m over {n_uavs} EO UAVs")
+
     candidates: list[Candidate] = []
     events: list[dict] = []
     by_struct: dict[int, list[Candidate]] = {}
@@ -176,9 +187,8 @@ def run_demo(network: str = "local", seed: int = 0, n_uavs: int = 6, n_high: int
 
     # ===================== PHASE 0: high-altitude SAR sweep =====================
     log("\n[SAR] high-altitude radar sweep (illumination-independent) ...")
-    sar_assign = assign_coverage(refinery.structures, high_fleet) if high_fleet else {}
     for u in high_fleet:
-        for k, sid in enumerate(sar_assign.get(u.uav_id, [])):
+        for k, sid in enumerate(ordered_structures(refinery, u, sar_assign.get(u.uav_id, []))):
             s = refinery.by_id(sid)
             pose = _sar_pose(s.axis_point(0.5), az=math.radians(40 + 80 * (k % 3)))
             for det in inspect_sar(renderer, pose, refinery, defects, u.uav_id, 0.0, crop_dir, seed):
@@ -186,17 +196,15 @@ def run_demo(network: str = "local", seed: int = 0, n_uavs: int = 6, n_high: int
     log(f"[SAR] {sum(c.modality=='sar' for c in candidates)} SAR-origin candidates")
 
     # ===================== PHASE 1: low-altitude EO coverage =====================
-    log("\n[EO] cooperative coverage sweep ...")
-    coverage = assign_coverage(refinery.structures, low_fleet)
+    log("\n[EO] cooperative coverage sweep (TSP-routed) ...")
     vp_kw = {"n_az": 6, "height_fracs": (0.5,)} if quick else {}
     n_insp = 0
     for u in low_fleet:
-        for sid in coverage[u.uav_id]:
+        for sid, vp in plan_coverage(refinery, u, coverage[u.uav_id], **vp_kw):
             s = refinery.by_id(sid)
-            for vp in s.inspection_viewpoints(**vp_kw):
-                n_insp += 1
-                for det in inspect(renderer, vp, s, u.uav_id, 0.0, crop_dir, illumination=illumination):
-                    observe(u, det)
+            n_insp += 1
+            for det in inspect(renderer, vp, s, u.uav_id, 0.0, crop_dir, illumination=illumination):
+                observe(u, det)
     log(f"[EO] {n_insp} inspections -> {len(candidates)} total candidate failures")
 
     # ===================== PHASE 2: cooperative validation =====================
