@@ -6,141 +6,108 @@ interface Props { uavs: UAV[]; buildings: Building[]; coverage: number; }
 
 export default function CoverageMap({ uavs, buildings, coverage }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef<number>(0);
+  const frame = useRef(0);
+  const angle = useRef(0);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    const scaleX = W / 12;
-    const scaleZ = H / 12;
-    const cx = W / 2;
-    const cz = H / 2;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.width = canvas.clientWidth * dpr;
+    const H = canvas.height = canvas.clientHeight * dpr;
+    ctx.scale(1, 1);
+    const cx = W / 2, cz = H / 2;
+    const sx = W / 13, sz = H / 13;
 
     const draw = () => {
       ctx.clearRect(0, 0, W, H);
 
-      // Background grid
-      ctx.strokeStyle = 'rgba(0, 200, 255, 0.06)';
-      ctx.lineWidth = 0.5;
-      for (let gx = 0; gx <= W; gx += scaleX) {
-        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+      // concentric range rings
+      ctx.strokeStyle = 'rgba(56,225,255,0.10)';
+      ctx.lineWidth = 1;
+      for (let r = 1; r <= 4; r++) {
+        ctx.beginPath(); ctx.arc(cx, cz, (Math.min(W, H) / 2) * (r / 4.4), 0, Math.PI * 2); ctx.stroke();
       }
-      for (let gz = 0; gz <= H; gz += scaleZ) {
-        ctx.beginPath(); ctx.moveTo(0, gz); ctx.lineTo(W, gz); ctx.stroke();
-      }
+      // cross hairs
+      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+      ctx.moveTo(0, cz); ctx.lineTo(W, cz);
+      ctx.strokeStyle = 'rgba(56,225,255,0.07)'; ctx.stroke();
+
+      // radar sweep
+      angle.current += 0.02;
+      const grad = ctx.createConicGradient(angle.current, cx, cz);
+      grad.addColorStop(0, 'rgba(56,225,255,0.22)');
+      grad.addColorStop(0.08, 'rgba(56,225,255,0.0)');
+      grad.addColorStop(1, 'rgba(56,225,255,0.0)');
+      ctx.beginPath(); ctx.moveTo(cx, cz);
+      ctx.arc(cx, cz, Math.min(W, H) / 2, angle.current - 0.6, angle.current);
+      ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
 
       // UAV coverage radii
-      uavs.forEach(uav => {
-        const px = cx + uav.position.x * scaleX;
-        const pz = cz + uav.position.z * scaleZ;
-        const r = (uav.position.y / 4) * 25;
-        const sensorColor = uav.sensor === 'SAR' ? '170,68,255' : uav.sensor === 'IR' ? '255,136,0' : '0,200,255';
-        const grad = ctx.createRadialGradient(px, pz, 0, px, pz, r);
-        grad.addColorStop(0, `rgba(${sensorColor}, 0.12)`);
-        grad.addColorStop(1, `rgba(${sensorColor}, 0)`);
-        ctx.beginPath();
-        ctx.arc(px, pz, r, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
+      uavs.forEach(u => {
+        const px = cx + u.position.x * sx, pz = cz + u.position.z * sz;
+        const rad = (u.position.y / 4) * 26 * dpr;
+        const col = u.sensor === 'SAR' ? '164,123,255' : u.sensor === 'IR' ? '255,181,61' : '56,225,255';
+        const g = ctx.createRadialGradient(px, pz, 0, px, pz, rad);
+        g.addColorStop(0, `rgba(${col},0.14)`); g.addColorStop(1, `rgba(${col},0)`);
+        ctx.beginPath(); ctx.arc(px, pz, rad, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
       });
 
-      // Buildings
+      // buildings
       buildings.forEach(b => {
-        const px = cx + b.position.x * scaleX;
-        const pz = cz + b.position.z * scaleZ;
-        const bc = b.status === 'CRITICAL' ? '#ff3344' : b.status === 'ALERT' ? '#ff8800' : '#00c8ff';
-        ctx.fillStyle = bc;
-        ctx.globalAlpha = 0.8;
-        ctx.fillRect(px - 4, pz - 4, 8, 8);
-        ctx.globalAlpha = 0.2;
-        ctx.strokeStyle = bc;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px - 4, pz - 4, 8, 8);
+        const px = cx + b.position.x * sx, pz = cz + b.position.z * sz;
+        const col = b.status === 'CRITICAL' ? '#ff3b4e' : b.status === 'ALERT' ? '#ffb53d' : '#38e1ff';
+        ctx.fillStyle = col; ctx.globalAlpha = 0.85;
+        ctx.fillRect(px - 4 * dpr, pz - 4 * dpr, 8 * dpr, 8 * dpr);
         ctx.globalAlpha = 1;
-
-        // Label
-        ctx.fillStyle = bc;
-        ctx.font = '6px JetBrains Mono, monospace';
-        ctx.fillText(b.id, px + 5, pz - 2);
+        ctx.fillStyle = col; ctx.font = `${7 * dpr}px JetBrains Mono`;
+        ctx.fillText(b.id, px + 6 * dpr, pz - 3 * dpr);
+        if (b.status === 'CRITICAL') {
+          const pr = 6 + Math.sin(Date.now() / 250) * 4;
+          ctx.beginPath(); ctx.arc(px, pz, pr * dpr, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255,59,78,0.5)`; ctx.lineWidth = 1; ctx.stroke();
+        }
       });
 
       // UAVs
-      uavs.forEach(uav => {
-        const px = cx + uav.position.x * scaleX;
-        const pz = cz + uav.position.z * scaleZ;
-        const mc = uav.mode === 'IDLE' ? '#7ab0cc' : uav.mode === 'INSPECT' || uav.mode === 'REVALIDATE' ? '#00c8ff' : '#0066ff';
-
-        // Trail dot
-        ctx.beginPath();
-        ctx.arc(px, pz, 3, 0, Math.PI * 2);
-        ctx.fillStyle = mc;
-        ctx.fill();
-
-        // Pulse ring for active modes
-        if (uav.mode === 'INSPECT' || uav.mode === 'REVALIDATE') {
-          ctx.beginPath();
-          ctx.arc(px, pz, 7, 0, Math.PI * 2);
-          ctx.strokeStyle = `${mc}55`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-
-        // Label
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.font = '5px JetBrains Mono, monospace';
-        ctx.fillText(uav.id.slice(-3), px + 4, pz - 3);
+      uavs.forEach(u => {
+        const px = cx + u.position.x * sx, pz = cz + u.position.z * sz;
+        const col = u.mode === 'IDLE' ? '#93b3cf' : (u.mode === 'INSPECT' || u.mode === 'REVALIDATE') ? '#38e1ff' : '#5b8cff';
+        ctx.beginPath(); ctx.arc(px, pz, 3 * dpr, 0, Math.PI * 2); ctx.fillStyle = col;
+        ctx.shadowColor = col; ctx.shadowBlur = 8 * dpr; ctx.fill(); ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(234,245,255,0.5)'; ctx.font = `${6 * dpr}px JetBrains Mono`;
+        ctx.fillText(u.id.slice(-3), px + 5 * dpr, pz - 4 * dpr);
       });
     };
 
-    const loop = () => { draw(); frameRef.current = requestAnimationFrame(loop); };
+    const loop = () => { draw(); frame.current = requestAnimationFrame(loop); };
     loop();
-    return () => cancelAnimationFrame(frameRef.current);
+    return () => cancelAnimationFrame(frame.current);
   }, [uavs, buildings]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold tracking-widest text-cyan-400 uppercase">
-          Tactical Overlay
-        </h2>
+        <span className="label">Tactical Radar</span>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-sm bg-cyan-400 opacity-80" />
-            <span className="text-xs text-white/30">UAV</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-sm bg-red-400 opacity-80" />
-            <span className="text-xs text-white/30">CRIT</span>
-          </div>
+          {[['UAV','var(--cyan)'],['ALERT','var(--amber)'],['CRIT','var(--red)']].map(([l,c])=>(
+            <div key={l} className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: c }} />
+              <span className="mono text-[9px] text-[var(--t-lo)]">{l}</span>
+            </div>
+          ))}
         </div>
       </div>
-
-      <div className="relative flex-1 rounded-md overflow-hidden" style={{ border: '1px solid rgba(0,200,255,0.12)' }}>
-        <canvas
-          ref={canvasRef}
-          width={260}
-          height={200}
-          className="w-full h-full"
-          style={{ imageRendering: 'crisp-edges' }}
-        />
-        {/* Coverage overlay */}
-        <div className="absolute bottom-2 right-2 panel px-2 py-1">
-          <div className="flex items-center gap-1.5">
-            <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-cyan-400"
-                animate={{ width: `${coverage}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
-            <span className="mono text-xs text-cyan-400">{coverage.toFixed(1)}%</span>
+      <div className="relative flex-1 rounded-xl overflow-hidden bracket" style={{ border: '1px solid var(--hair)', background: 'radial-gradient(circle at center, rgba(56,225,255,0.04), transparent 70%)' }}>
+        <canvas ref={canvasRef} className="w-full h-full block" />
+        <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 glass rounded-lg px-2.5 py-1.5">
+          <span className="mono text-[9px] text-[var(--t-lo)]">COVERAGE</span>
+          <div className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+            <motion.div className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg,var(--cyan),var(--indigo))' }}
+              animate={{ width: `${coverage}%` }} transition={{ duration: 1 }} />
           </div>
-          <p className="text-xs text-white/25 mt-0.5">Coverage</p>
+          <span className="mono text-[10px] text-[var(--cyan)] tabular-nums">{coverage.toFixed(1)}%</span>
         </div>
       </div>
     </div>

@@ -1,76 +1,97 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+function Emblem() {
+  return (
+    <svg viewBox="0 0 40 40" width="34" height="34">
+      <motion.circle cx="20" cy="20" r="17" fill="none" stroke="#38e1ff" strokeWidth="1"
+        strokeDasharray="3 4" opacity="0.7"
+        animate={{ rotate: 360 }} transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
+        style={{ transformOrigin: '20px 20px' }} />
+      <circle cx="20" cy="20" r="10" fill="none" stroke="#5b8cff" strokeWidth="1.5" />
+      <motion.circle cx="20" cy="20" r="4" fill="#38e1ff"
+        animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1.6, repeat: Infinity }} />
+      <circle cx="20" cy="3" r="2" fill="#38e1ff" />
+      <circle cx="37" cy="20" r="2" fill="#a47bff" opacity="0.7" />
+      <circle cx="3" cy="20" r="2" fill="#5b8cff" opacity="0.7" />
+    </svg>
+  );
+}
+
+const LINKS = [
+  { id: 'SIM', color: 'var(--lime)' },
+  { id: 'CHAIN', color: 'var(--indigo)' },
+  { id: 'C2', color: 'var(--cyan)' },
+  { id: 'MESH', color: 'var(--violet)' },
+  { id: 'SAR', color: 'var(--amber)' },
+];
+
 export default function Header() {
-  const now = new Date();
-  const timeStr = now.toUTCString().replace('GMT', 'UTC');
+  const [clock, setClock] = useState('');
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      const p = (n: number) => String(n).padStart(2, '0');
+      setClock(`${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} UTC`);
+    };
+    tick();
+    const i = setInterval(tick, 1000);
+    return () => clearInterval(i);
+  }, []);
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 flex-shrink-0"
-      style={{ borderBottom: '1px solid rgba(0,200,255,0.1)' }}>
-      {/* Logo */}
-      <div className="flex items-center gap-3">
-        <motion.div
-          className="relative"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-        >
-          <svg viewBox="0 0 32 32" width="28" height="28">
-            <circle cx="16" cy="16" r="14" fill="none" stroke="#00c8ff" strokeWidth="1" strokeDasharray="4 2" />
-            <circle cx="16" cy="16" r="8" fill="none" stroke="#0066ff" strokeWidth="1.5" />
-            <circle cx="16" cy="16" r="3" fill="#00c8ff" />
-            <circle cx="16" cy="2" r="2" fill="#00c8ff" />
-            <circle cx="16" cy="30" r="2" fill="#00c8ff" opacity="0.5" />
-            <circle cx="2" cy="16" r="2" fill="#00c8ff" opacity="0.5" />
-            <circle cx="30" cy="16" r="2" fill="#00c8ff" opacity="0.5" />
-          </svg>
-        </motion.div>
+    <motion.header
+      className="flex items-center justify-between px-5 h-16 flex-shrink-0 relative z-20"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      style={{ borderBottom: '1px solid var(--hair)' }}
+    >
+      {/* Left: brand */}
+      <div className="flex items-center gap-3 no-select">
+        <Emblem />
         <div>
-          <h1 className="mono font-bold text-sm tracking-widest" style={{
-            background: 'linear-gradient(90deg, #00c8ff, #0066ff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            SHROUD
-          </h1>
-          <p className="mono text-xs text-white/25 leading-tight">Cooperative UAV Infrastructure Monitor</p>
+          <div className="flex items-center gap-2">
+            <h1 className="display text-lg font-bold tracking-[0.28em] grad-text leading-none">SHROUD</h1>
+            <span className="mono text-[9px] px-1.5 py-0.5 rounded border border-[var(--hair-strong)] text-[var(--t-mid)]">v0.1.0</span>
+          </div>
+          <p className="mono text-[10px] text-[var(--t-lo)] tracking-wider mt-0.5">
+            COOPERATIVE UAV INFRASTRUCTURE MONITOR
+          </p>
         </div>
       </div>
 
-      {/* Center indicators */}
-      <div className="flex items-center gap-4">
-        {[
-          { label: 'SIM', color: '#00ff88', active: true },
-          { label: 'CHAIN', color: '#0066ff', active: true },
-          { label: 'C2', color: '#00c8ff', active: true },
-          { label: 'MESH', color: '#aa44ff', active: true },
-        ].map(({ label, color, active }) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <motion.div
+      {/* Center: subsystem links */}
+      <div className="hidden md:flex items-center gap-5 px-5 py-2 glass rounded-full">
+        {LINKS.map(({ id, color }, i) => (
+          <div key={id} className="flex items-center gap-1.5">
+            <motion.span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: active ? color : '#334455' }}
-              animate={active ? { opacity: [1, 0.4, 1] } : {}}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: Math.random() * 1 }}
+              style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+              animate={{ opacity: [1, 0.35, 1] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.25 }}
             />
-            <span className="mono text-xs" style={{ color: active ? color : '#334455' }}>{label}</span>
+            <span className="mono text-[10px] tracking-wider" style={{ color }}>{id}</span>
           </div>
         ))}
       </div>
 
-      {/* Time / network */}
-      <div className="flex items-center gap-4">
+      {/* Right: clock + status */}
+      <div className="flex items-center gap-4 no-select">
         <div className="text-right">
-          <p className="mono text-xs text-white/50">{timeStr.split(',')[1]?.trim().slice(0, 12) ?? ''}</p>
-          <p className="mono text-xs text-white/25">Avalanche Fuji C-Chain · 43113</p>
+          <p className="mono text-sm text-[var(--t-hi)] leading-none tracking-wide">{clock}</p>
+          <p className="mono text-[10px] text-[var(--t-lo)] mt-1">AVALANCHE FUJI · 43113</p>
         </div>
-        <div className="panel px-2 py-1 flex items-center gap-1.5">
-          <motion.div
-            className="w-2 h-2 rounded-full bg-green-400"
+        <div className="glass rounded-full px-3 py-1.5 flex items-center gap-2">
+          <motion.span
+            className="w-2 h-2 rounded-full bg-[var(--lime)]"
+            style={{ boxShadow: '0 0 10px var(--lime)' }}
             animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           />
-          <span className="mono text-xs text-green-400">ONLINE</span>
+          <span className="mono text-[10px] tracking-widest text-[var(--lime)]">LIVE</span>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }
