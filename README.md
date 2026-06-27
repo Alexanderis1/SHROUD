@@ -1,5 +1,7 @@
 # SHROUD
 
+https://youtu.be/nVH184akhu4
+
 **Cooperative UAV monitoring of critical infrastructure — CV/SAR defect detection, graph-theoretic task allocation, and Avalanche-tokenised, cooperatively-validated failure tracking.**
 
 > A team of UAVs cooperatively and continuously inspects a critical-infrastructure asset (a refinery / tank farm) for damage, faults and unexpected conditions. Low-altitude UAVs use computer vision (EO/IR); high-altitude UAVs use synthetic-aperture radar (SAR) to see through poor light and weather. When any UAV recognises a candidate defect, its **position and image data are captured, tokenised on the Avalanche blockchain, and associated with the affected structure**. Other UAVs are then tasked to re-inspect it; once **≥ 3 distinct UAVs independently recognise it as real**, the failure is promoted to **verified damage**. An operator/client then drives the failure lifecycle: *identified → in&nbsp;maintenance → solved*.
