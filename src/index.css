@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  :root {
+    --color-accent: #7c3aed;
+    --color-accent-light: #a78bfa;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0a0a0f;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  background: #1a1a2e !important;
+  border-radius: 1rem;
+}
+
+.leaflet-tile-pane {
+  filter: hue-rotate(200deg) saturate(0.6) brightness(0.7);
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1e1e3a;
+  color: #e2e8f0;
+  border: 1px solid #7c3aed44;
+  border-radius: 12px;
+  box-shadow: 0 0 30px #7c3aed33;
+}
+
+.leaflet-popup-tip {
+  background: #1e1e3a;
+}
+
+.leaflet-popup-close-button {
+  color: #a78bfa !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f0f1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #7c3aed55;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px #7c3aed44; }
+  50% { box-shadow: 0 0 40px #7c3aed88, 0 0 60px #7c3aed33; }
+}
+
+.glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Scan line effect */
+@keyframes scan {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+.scan-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #7c3aed88, transparent);
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Fade in animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1e1e3a 25%, #2a2a4a 50%, #1e1e3a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
