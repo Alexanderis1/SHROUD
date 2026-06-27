@@ -121,6 +121,26 @@ class Renderer:
         self._cam_node = self.scene.add(self._cam, pose=np.eye(4))
         self._r = pyrender.OffscreenRenderer(width, height)
 
+    def add_drones(self, colors) -> int:
+        """Add animated quadrotor nodes (one per colour); returns the count."""
+        from .drones import quadrotor_mesh  # noqa: PLC0415
+        self._drone_nodes = []
+        for col in colors:
+            tm = quadrotor_mesh()
+            mat = pyrender.MetallicRoughnessMaterial(
+                baseColorFactor=[*col, 1.0], metallicFactor=0.2, roughnessFactor=0.5,
+                emissiveFactor=[c * 0.5 for c in col])
+            mesh = pyrender.Mesh.from_trimesh(tm, material=mat, smooth=False)
+            self._drone_nodes.append(self.scene.add(mesh, pose=np.eye(4)))
+        return len(self._drone_nodes)
+
+    def set_drone(self, i: int, pos, yaw: float) -> None:
+        c, s = np.cos(yaw), np.sin(yaw)
+        m = np.eye(4)
+        m[:3, :3] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+        m[:3, 3] = np.asarray(pos, float)
+        self.scene.set_pose(self._drone_nodes[i], m)
+
     def render(self, pose: CameraPose) -> np.ndarray:
         self._cam.yfov = np.radians(pose.fov_deg)
         self._cam.aspectRatio = self.w / self.h

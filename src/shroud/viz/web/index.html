@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHROUD — Operator Console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◆</span>
+      <div>
+        <div class="title">SHROUD</div>
+        <div class="subtitle">Cooperative UAV infrastructure monitoring — operator console</div>
+      </div>
+    </div>
+    <div class="chainbox">
+      <span id="netbadge" class="badge">●&nbsp;local EVM</span>
+      <a id="contract" class="contract" href="#" target="_blank" rel="noopener">contract —</a>
+      <div class="counters">
+        <span class="kpi"><b id="k-id">0</b><i>identified</i></span>
+        <span class="kpi v"><b id="k-ver">0</b><i>verified</i></span>
+        <span class="kpi s"><b id="k-sol">0</b><i>solved</i></span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="map-pane">
+      <div class="pane-head"><h2>Site map</h2>
+        <div class="controls">
+          <button id="restart" title="Replay">⟳ Replay</button>
+          <span id="status" class="status">loading…</span>
+        </div>
+      </div>
+      <canvas id="map" width="640" height="520"></canvas>
+      <div class="legend">
+        <span><i class="dot id"></i>identified</span>
+        <span><i class="dot ver"></i>verified damage</span>
+        <span><i class="dot maint"></i>in maintenance</span>
+        <span><i class="dot sol"></i>solved</span>
+        <span><i class="dot uav"></i>UAV</span>
+      </div>
+    </section>
+
+    <section class="feed-pane">
+      <div class="pane-head"><h2>Failure feed</h2><span id="feedcount" class="status"></span></div>
+      <div id="feed" class="feed"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="foot">Connected to the SHROUD simulator recording.</span>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
