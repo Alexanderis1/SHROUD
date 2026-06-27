@@ -15,10 +15,11 @@ def test_end_to_end_local(tmp_path):
         if "GL" in str(e) or "context" in str(e).lower() or "render" in str(e).lower():
             pytest.skip(f"offscreen GL unavailable: {e}")
         raise
-    assert s["chain_counts"]["uavs"] == 6
+    assert s["chain_counts"]["uavs"] == 9          # 6 EO + 3 SAR
     assert s["chain_counts"]["buildings"] == 20
-    assert s["candidates"] >= 4, s
-    assert s["verified"] >= 3, s            # cooperative >=3-UAV validation worked
+    assert s["candidates"] >= 6, s
+    assert s["sar_finds"] >= 1, s           # high-altitude SAR found deformation/thermal
+    assert s["verified"] >= 4, s            # cooperative >=3-UAV validation worked
     assert s["solved"] >= 1, s              # operator lifecycle worked
     # every minted token exists on-chain
     assert s["chain_counts"]["failures"] == s["candidates"]

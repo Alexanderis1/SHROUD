@@ -33,6 +33,7 @@ class Defect:
     color: tuple                  # RGB 0..255 of the visual mark
     shape: str                    # patch | line | streak | blob
     thermal: float = 0.0          # 0..1 extra hot-spot signal (IR / SAR cue)
+    sar_signature: float = 0.0    # 0..1 radar return anomaly (SAR visibility)
     found_by: set = None          # eval bookkeeping: uav_ids that detected it
 
     def __post_init__(self):
@@ -48,6 +49,14 @@ _APPEARANCE = {
     DefectType.LEAK:            ((34, 28, 24), "streak", (0.5, 1.6), 0.15),
     DefectType.DEFORMATION:     ((96, 96, 102), "blob", (0.8, 2.2), 0.0),
     DefectType.THERMAL_ANOMALY: ((255, 140, 50), "blob", (0.4, 1.2), 0.85),
+}
+
+# Radar-return anomaly per type: structural changes (deformation) and hot-spots
+# scatter strongly; thin discolouration (corrosion/coating) barely. This is why
+# the high-altitude SAR pass earns the deformation defects mono-EO cannot see.
+_SAR = {
+    DefectType.CORROSION: 0.20, DefectType.COATING_LOSS: 0.12, DefectType.CRACK: 0.30,
+    DefectType.LEAK: 0.32, DefectType.DEFORMATION: 0.90, DefectType.THERMAL_ANOMALY: 0.92,
 }
 
 # Plausible defect types per structure kind.
@@ -92,8 +101,9 @@ def inject_defects(refinery: Refinery, seed: int = 0, count: int = 14,
         thermal = min(1.0, base_thermal + (0.3 * severity if dtype == DefectType.THERMAL_ANOMALY else 0.0))
         did += 1
         per_struct[s.id] = per_struct.get(s.id, 0) + 1
+        sar = min(1.0, _SAR[dtype] * (0.55 + 0.45 * severity))
         defects.append(Defect(
             id=did, structure_id=s.id, defect_type=dtype,
             position=pt, normal=nrm, size_m=size, severity=severity,
-            color=color, shape=shape, thermal=thermal))
+            color=color, shape=shape, thermal=thermal, sar_signature=sar))
     return defects
